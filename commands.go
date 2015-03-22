@@ -3,28 +3,21 @@ package main
 import (
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/codegangsta/cli"
 )
 
 var Commands = []cli.Command{
-	commandInstall,
 	commandInit,
 	commandBuild,
 	commandRelease,
 }
 
-var commandInstall = cli.Command{
-	Name:  "install",
-	Usage: "",
-	Description: `
-`,
-	Action: doInstall,
-}
-
 var commandInit = cli.Command{
 	Name:  "init",
-	Usage: "",
+	Usage: "Create new project",
 	Description: `
 `,
 	Action: doInit,
@@ -32,7 +25,7 @@ var commandInit = cli.Command{
 
 var commandBuild = cli.Command{
 	Name:  "build",
-	Usage: "",
+	Usage: "Build package",
 	Description: `
 `,
 	Action: doBuild,
@@ -40,7 +33,7 @@ var commandBuild = cli.Command{
 
 var commandRelease = cli.Command{
 	Name:  "release",
-	Usage: "",
+	Usage: "build package and release it",
 	Description: `
 `,
 	Action: doRelease,
@@ -58,14 +51,33 @@ func assert(err error) {
 	}
 }
 
-func doInstall(c *cli.Context) {
-}
-
 func doInit(c *cli.Context) {
 }
 
 func doBuild(c *cli.Context) {
+	version, err := readVersion()
+	panicIf(err)
+
+	compile(version)
 }
 
 func doRelease(c *cli.Context) {
+}
+
+func compile(version string) {
+	buildDir := filepath.Join("build", version)
+
+	err := os.RemoveAll(buildDir)
+	panicIf(err)
+
+	cmd := exec.Command("gox", "-output", filepath.Join(buildDir, "{{.OS}}_{{.Arch}}", "{{.Dir}}"))
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
+	panicIf(err)
+}
+
+func panicIf(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
