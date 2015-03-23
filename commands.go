@@ -104,43 +104,28 @@ func pkg(version, buildDir, pkgDir string) {
 	err = os.MkdirAll(pkgDir, 0755)
 	panicIf(err)
 
-	buildCh := make(chan *Build)
-	quitCh := make(chan bool)
-
 	dirs, err := ioutil.ReadDir(buildDir)
 	panicIf(err)
 
 	wg := new(sync.WaitGroup)
 
-	go zipper(buildCh, quitCh, pkgDir, wg)
-
 	for _, dir := range dirs {
 		wg.Add(1)
 
-		build := &Build{
-			Target:  dir.Name(),
-			Version: version,
-			Dir:     filepath.Join(buildDir, dir.Name()),
-		}
-		buildCh <- build
+		go func(dir os.FileInfo, pkgDir string, wg *sync.WaitGroup) {
+			build := &Build{
+				Target:  dir.Name(),
+				Version: version,
+				Dir:     filepath.Join(buildDir, dir.Name()),
+			}
+
+			makeZip(build, pkgDir, wg)
+		}(dir, pkgDir, wg)
 	}
 
 	wg.Wait()
-	quitCh <- true
 
 	fmt.Fprintf(os.Stderr, "Package files created into %s\n", pkgDir)
-}
-
-func zipper(buildCh chan *Build, quitCh chan bool, pkgDir string, wg *sync.WaitGroup) {
-	for {
-		select {
-		case build := <-buildCh:
-			makeZip(build, pkgDir, wg)
-
-		case <-quitCh:
-			return
-		}
-	}
 }
 
 func makeZip(build *Build, pkgDir string, wg *sync.WaitGroup) {
