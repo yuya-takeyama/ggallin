@@ -226,8 +226,8 @@ func makeZip(build *Build, pkgDir string, wg *sync.WaitGroup) {
 
 func gitPush() {
 	cmd := exec.Command("git", "push", "origin", "master")
-	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 	panicIf(err)
