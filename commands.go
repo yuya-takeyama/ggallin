@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/codegangsta/cli"
@@ -92,9 +94,27 @@ func compile(version, buildDir string) {
 	err := os.RemoveAll(buildDir)
 	panicIf(err)
 
-	cmd := exec.Command("gox", "-output", filepath.Join(buildDir, "{{.OS}}_{{.Arch}}", "{{.Dir}}"))
+	gitCommit, err := getCommitHash()
+	panicIf(err)
+
+	cmd := exec.Command("gox", "-ldflags", "-X main.GitCommit "+gitCommit, "-output", filepath.Join(buildDir, "{{.OS}}_{{.Arch}}", "{{.Dir}}"))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	panicIf(err)
+}
+
+func getCommitHash() (string, error) {
+	out := new(bytes.Buffer)
+
+	cmd := exec.Command("git", "describe", "--always")
+	cmd.Stdout = out
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(out.String()), nil
 }
 
 func pkg(version, buildDir, pkgDir string) {
@@ -163,6 +183,10 @@ func release(version, pkgDir string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	panicIf(err)
+}
+
+func printVersion(c *cli.Context) {
+	fmt.Printf("%s v%s, build %s\n", c.App.Name, Version, GitCommit)
 }
 
 func panicIf(err error) {

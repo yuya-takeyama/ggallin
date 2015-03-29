@@ -15,5 +15,7 @@ func main() {
 	app.Email = "sign.of.the.wolf.pentagram@gmail.com"
 	app.Commands = Commands
 
+	cli.VersionPrinter = printVersion
+
 	app.Run(os.Args)
 }
