@@ -116,6 +116,7 @@ func doRelease(c *cli.Context) {
 
 	compile(c, version, buildDir)
 	pkg(version, buildDir, pkgDir)
+	gitPush()
 	release(c, version, pkgDir)
 }
 
@@ -219,6 +220,15 @@ func makeZip(build *Build, pkgDir string, wg *sync.WaitGroup) {
 	}
 
 	err = zipWriter.Close()
+	panicIf(err)
+}
+
+func gitPush() {
+	cmd := exec.Command("git", "push", "origin", "master")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
 	panicIf(err)
 }
 
