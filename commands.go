@@ -74,6 +74,10 @@ var commandRelease = cli.Command{
 		archFlag,
 		osFlag,
 		osarchFlag,
+		cli.BoolFlag{
+			Name:  "replace",
+			Usage: "Replace asset if target is already exists",
+		},
 		cli.StringFlag{
 			Name:  "username, u",
 			Usage: "GitHub username",
@@ -239,6 +243,10 @@ func release(c *cli.Context, version, pkgDir string) {
 	username := c.String("username")
 	if username != "" {
 		options = append(options, "--username", username)
+	}
+
+	if c.Bool("replace") {
+		options = append(options, "--replace")
 	}
 
 	options = append(options, "v"+version, pkgDir)
