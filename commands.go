@@ -22,6 +22,21 @@ type Build struct {
 	Dir     string
 }
 
+var archFlag = cli.StringFlag{
+	Name:  "arch",
+	Usage: "Space-separated list of architectures to build for",
+}
+
+var osFlag = cli.StringFlag{
+	Name:  "os",
+	Usage: "Space-separated list of operating systems to build for",
+}
+
+var osarchFlag = cli.StringFlag{
+	Name:  "osarch",
+	Usage: "Space-separated list of os/arch pairs to build for",
+}
+
 var Commands = []cli.Command{
 	commandInit,
 	commandBuild,
@@ -42,6 +57,11 @@ var commandBuild = cli.Command{
 	Description: `
 `,
 	Action: doBuild,
+	Flags: []cli.Flag{
+		archFlag,
+		osFlag,
+		osarchFlag,
+	},
 }
 
 var commandRelease = cli.Command{
@@ -50,6 +70,15 @@ var commandRelease = cli.Command{
 	Description: `
 `,
 	Action: doRelease,
+	Flags: []cli.Flag{
+		archFlag,
+		osFlag,
+		osarchFlag,
+		cli.StringFlag{
+			Name:  "username, u",
+			Usage: "GitHub username",
+		},
+	},
 }
 
 func debug(v ...interface{}) {
@@ -74,7 +103,7 @@ func doBuild(c *cli.Context) {
 	buildDir := filepath.Join("build", version)
 	pkgDir := filepath.Join("pkg", version)
 
-	compile(version, buildDir)
+	compile(c, version, buildDir)
 	pkg(version, buildDir, pkgDir)
 }
 
@@ -85,19 +114,35 @@ func doRelease(c *cli.Context) {
 	buildDir := filepath.Join("build", version)
 	pkgDir := filepath.Join("pkg", version)
 
-	compile(version, buildDir)
+	compile(c, version, buildDir)
 	pkg(version, buildDir, pkgDir)
-	release(version, pkgDir)
+	release(c, version, pkgDir)
 }
 
-func compile(version, buildDir string) {
+func compile(c *cli.Context, version, buildDir string) {
 	err := os.RemoveAll(buildDir)
 	panicIf(err)
 
 	gitCommit, err := getCommitHash()
 	panicIf(err)
 
-	cmd := exec.Command("gox", "-ldflags", "-X main.GitCommit "+gitCommit, "-output", filepath.Join(buildDir, "{{.OS}}_{{.Arch}}", "{{.Dir}}"))
+	options := []string{
+		"-ldflags",
+		"-X main.GitCommit " + gitCommit,
+		"-output",
+		filepath.Join(buildDir, "{{.OS}}_{{.Arch}}", "{{.Dir}}"),
+	}
+
+	if c.String("arch") != "" {
+		options = append(options, "-arch", c.String("arch"))
+	}
+	if c.String("os") != "" {
+	}
+	if c.String("osarch") != "" {
+		options = append(options, "-osarch", c.String("osarch"))
+	}
+
+	cmd := exec.Command("gox", options...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -177,8 +222,17 @@ func makeZip(build *Build, pkgDir string, wg *sync.WaitGroup) {
 	panicIf(err)
 }
 
-func release(version, pkgDir string) {
-	cmd := exec.Command("ghr", "v"+version, pkgDir)
+func release(c *cli.Context, version, pkgDir string) {
+	options := []string{}
+
+	username := c.String("username")
+	if username != "" {
+		options = append(options, "--username", username)
+	}
+
+	options = append(options, "v"+version, pkgDir)
+
+	cmd := exec.Command("ghr", options...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
