@@ -138,6 +138,7 @@ func compile(c *cli.Context, version, buildDir string) {
 		options = append(options, "-arch", c.String("arch"))
 	}
 	if c.String("os") != "" {
+		options = append(options, "-os", c.String("os"))
 	}
 	if c.String("osarch") != "" {
 		options = append(options, "-osarch", c.String("osarch"))
