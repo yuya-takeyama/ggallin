@@ -133,7 +133,7 @@ func compile(c *cli.Context, version, buildDir string) {
 
 	options := []string{
 		"-ldflags",
-		"-X main.GitCommit " + gitCommit,
+		"-X main.GitCommit=" + gitCommit,
 		"-output",
 		filepath.Join(buildDir, "{{.OS}}_{{.Arch}}", "{{.Dir}}"),
 	}
