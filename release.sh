@@ -1,1 +1,1 @@
-ggallin release --os="linux darwin" --username=yuya-takeyama
+ggallin release --os="linux darwin" --arch="386 amd64" --username=yuya-takeyama
